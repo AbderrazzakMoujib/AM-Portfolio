@@ -13,40 +13,49 @@ class AuthController extends Controller
     /**
      * Admin login
      */
-    public function login(Request $request): JsonResponse
-    {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+    
+public function login(Request $request): JsonResponse
+{
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required', 'string'],
+    ]);
 
-        if (! Auth::attempt($credentials)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email ou mot de passe incorrect.'],
-            ]);
-        }
-
-        $request->session()->regenerate();
-
-        return response()->json([
-            'message' => 'Connexion réussie.',
-            'user' => $request->user()->only([
-                'id', 'name', 'email',
-            ]),
+    if (! Auth::attempt($credentials)) {
+        throw ValidationException::withMessages([
+            'email' => ['Identifiants incorrects.'],
         ]);
     }
 
-    /**
-     * Current authenticated user
-     */
-    public function me(Request $request): JsonResponse
-    {
-        return response()->json([
-            'user' => $request->user()->only([
-                'id', 'name', 'email',
-            ]),
+    if (! $request->user()->is_admin) {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        throw ValidationException::withMessages([
+            'email' => ['Identifiants incorrects.'],
         ]);
     }
+
+    $request->session()->regenerate();
+
+    return response()->json([
+        'message' => 'Connexion réussie.',
+        'user' => $request->user()->only([
+            'id', 'name', 'email', 'is_admin',
+        ]),
+    ]);
+}
+
+public function me(Request $request): JsonResponse
+{
+    return response()->json([
+        'user' => $request->user()->only([
+            'id', 'name', 'email', 'is_admin',
+        ]),
+    ]);
+}
+
 
     /**
      * Logout
