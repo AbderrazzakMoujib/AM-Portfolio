@@ -8,15 +8,14 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
+
 import {
-  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Check,
@@ -30,31 +29,19 @@ import {
   Send,
   X,
 } from "lucide-react";
+
 import {
   FaGithub,
   FaInstagram,
   FaLinkedin,
 } from "react-icons/fa6";
+
+import HeroGlass from "@/components/home/HeroGlass";
 import { api, initializeCsrf } from "@/lib/api";
 
-// Dynamic import: Three.js only loads in the browser.
-const AMLogo3D = dynamic(
-  () => import("@/components/home/AMLogo3D"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full min-h-[320px] items-center justify-center">
-        <Image
-          src="/images/am-logo.png"
-          alt="AM Logo"
-          width={240}
-          height={240}
-          className="h-auto w-40 animate-pulse object-contain"
-        />
-      </div>
-    ),
-  }
-);
+// ============================================================
+// TYPES
+// ============================================================
 
 type Profile = {
   full_name: string;
@@ -122,6 +109,10 @@ type ContactForm = {
   website: string;
 };
 
+// ============================================================
+// CONSTANTS
+// ============================================================
+
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8000"
@@ -169,6 +160,10 @@ const expertise = [
     color: "#00C8C8",
   },
 ];
+
+// ============================================================
+// HELPERS
+// ============================================================
 
 function assetUrl(
   path: string | null | undefined
@@ -225,6 +220,10 @@ function SectionLabel({
   );
 }
 
+// ============================================================
+// HOMEPAGE
+// ============================================================
+
 export default function HomePage() {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -244,16 +243,25 @@ export default function HomePage() {
     useState<ContactForm>(initialContact);
 
   const [sending, setSending] = useState(false);
-  const [contactError, setContactError] = useState("");
+
+  const [contactError, setContactError] =
+    useState("");
+
   const [contactSuccess, setContactSuccess] =
     useState("");
 
-  // Current year: client-side only
+  // ==========================================================
+  // CURRENT YEAR
+  // ==========================================================
+
   useEffect(() => {
     setYear(new Date().getFullYear());
   }, []);
 
-  // Laravel Homepage API
+  // ==========================================================
+  // LARAVEL PUBLIC API
+  // ==========================================================
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -271,7 +279,9 @@ export default function HomePage() {
         );
 
         if (!response.ok) {
-          throw new Error("Homepage API unavailable");
+          throw new Error(
+            "Homepage API unavailable"
+          );
         }
 
         const result =
@@ -293,8 +303,17 @@ export default function HomePage() {
     return () => controller.abort();
   }, []);
 
-  // Lenis Smooth Scroll
+  // ==========================================================
+  // LENIS SMOOTH SCROLL
+  // ==========================================================
+
   useEffect(() => {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (reduceMotion) return;
+
     const lenis = new Lenis({
       autoRaf: true,
       duration: 1.1,
@@ -304,7 +323,11 @@ export default function HomePage() {
     return () => lenis.destroy();
   }, []);
 
-  // GSAP Animations
+  // ==========================================================
+  // GSAP — OTHER SECTIONS
+  // Hero animations are handled inside HeroGlass.tsx
+  // ==========================================================
+
   useEffect(() => {
     if (!rootRef.current) return;
 
@@ -317,22 +340,6 @@ export default function HomePage() {
     gsap.registerPlugin(ScrollTrigger);
 
     const context = gsap.context(() => {
-      gsap.fromTo(
-        ".hero-reveal",
-        {
-          y: 50,
-          opacity: 0,
-        },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.13,
-          ease: "power3.out",
-          clearProps: "all",
-        }
-      );
-
       gsap.utils
         .toArray<HTMLElement>(".scroll-reveal")
         .forEach((element) => {
@@ -361,6 +368,10 @@ export default function HomePage() {
     return () => context.revert();
   }, [data]);
 
+  // ==========================================================
+  // DYNAMIC DATA
+  // ==========================================================
+
   const profile = data?.profile;
   const settings = data?.settings;
 
@@ -386,6 +397,10 @@ export default function HomePage() {
   const portrait = assetUrl(
     profile?.portrait_url
   );
+
+  // ==========================================================
+  // CONTACT FORM
+  // ==========================================================
 
   async function sendContact(
     event: FormEvent<HTMLFormElement>
@@ -429,12 +444,19 @@ export default function HomePage() {
     }
   }
 
+  // ==========================================================
+  // RENDER
+  // ==========================================================
+
   return (
     <div
       ref={rootRef}
       className="min-h-screen overflow-x-clip bg-[#0B0B12] font-sans text-white selection:bg-[#00C8C8] selection:text-[#0B0B12]"
     >
-      {/* NAVBAR */}
+      {/* ======================================================
+          NAVBAR
+      ====================================================== */}
+
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0B0B12]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-6 md:px-12">
           <Link
@@ -477,6 +499,7 @@ export default function HomePage() {
             className="hidden items-center gap-2 rounded-full border border-[#00C8C8]/50 px-6 py-3 text-sm font-medium text-[#00C8C8] transition hover:bg-[#00C8C8] hover:text-[#0B0B12] md:inline-flex"
           >
             Let&apos;s talk
+
             <ArrowUpRight size={16} />
           </a>
 
@@ -526,126 +549,26 @@ export default function HomePage() {
       </header>
 
       <main>
-        {/* HERO V2 — 3D AM LOGO */}
-        <section
-          id="home"
-          className="relative flex min-h-[100svh] items-center overflow-hidden border-b border-white/10 px-6 pb-16 pt-28 md:px-12"
-        >
-          {/* Decorative ambient lighting */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute right-0 top-0 h-[600px] w-[600px] rounded-full bg-[#00C8C8]/8 blur-[120px]"
-          />
+        {/* ==================================================
+            HERO V3 — FLOATING GLASS INTERFACE
+        ================================================== */}
 
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-[#446BFF]/10 blur-[100px]"
-          />
+        <HeroGlass
+          name={name}
+          headline={headline}
+          location={
+            profile?.location ??
+            "Casablanca, Morocco"
+          }
+          availableForWork={
+            profile?.available_for_work ?? true
+          }
+        />
 
-          <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
-            {/* Hero Content */}
-            <div className="relative z-10">
-              <div className="hero-reveal mb-9 flex items-center gap-3">
-                <span className="h-2 w-2 rounded-full bg-[#00C8C8]" />
+        {/* ==================================================
+            SELECTED WORK
+        ================================================== */}
 
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                  Creative Developer Portfolio
-                </p>
-              </div>
-
-              <h1 className="space-y-1 text-[clamp(3.4rem,6.5vw,7.5rem)] font-black uppercase leading-[0.99] tracking-[-0.065em]">
-                <span className="hero-reveal block">
-                  DESIGN
-                </span>
-
-                <span className="hero-reveal block">
-                  MEETS
-                </span>
-
-                <span className="hero-reveal block text-[#00C8C8]">
-                  ENGINEERING.
-                </span>
-              </h1>
-
-              <div className="hero-reveal mt-9 max-w-xl">
-                <p className="text-xl font-semibold text-white">
-                  {name}
-                </p>
-
-                <p className="mt-2 text-base text-white/60">
-                  {headline}
-                </p>
-
-                <p className="mt-5 max-w-lg text-sm leading-8 text-white/50 md:text-base">
-                  I build digital products,
-                  design meaningful experiences,
-                  and create visuals that move,
-                  inform and inspire.
-                </p>
-              </div>
-
-              <div className="hero-reveal mt-9 flex flex-wrap gap-4">
-                <a
-                  href="#work"
-                  className="inline-flex items-center gap-3 rounded-full bg-[#00C8C8] px-7 py-4 text-sm font-bold text-[#0B0B12] transition hover:bg-white"
-                >
-                  Explore My Work
-                  <ArrowUpRight size={19} />
-                </a>
-
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-3 rounded-full border border-white/25 px-7 py-4 text-sm font-semibold transition hover:border-[#00C8C8] hover:text-[#00C8C8]"
-                >
-                  Let&apos;s Talk
-                  <ArrowRight size={18} />
-                </a>
-              </div>
-
-              <div className="hero-reveal mt-14 flex flex-wrap gap-x-5 gap-y-2 text-[10px] font-semibold uppercase tracking-widest text-white/40">
-                <span>Development</span>
-                <span className="text-[#00C8C8]">/</span>
-                <span>UI/UX</span>
-                <span className="text-[#00C8C8]">/</span>
-                <span>Graphic</span>
-                <span className="text-[#00C8C8]">/</span>
-                <span>Motion</span>
-              </div>
-            </div>
-
-            {/* Real 3D Logo */}
-            <div className="relative flex min-h-[350px] items-center justify-center sm:min-h-[480px] lg:min-h-[630px]">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-[15%] rounded-full bg-[#00C8C8]/10 blur-[90px]"
-              />
-
-              <div className="relative h-[380px] w-full sm:h-[500px] lg:h-[650px]">
-                <AMLogo3D
-                  mode="both"
-                  speed={0.22}
-                  interactive
-                  className="h-full w-full"
-                />
-              </div>
-
-              <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] uppercase tracking-[0.22em] text-white/35">
-                AM Logo · Interactive 3D
-              </div>
-            </div>
-          </div>
-
-          <a
-            href="#work"
-            aria-label="Scroll to projects"
-            className="absolute bottom-5 left-6 flex items-center gap-2 text-xs text-white/45 transition hover:text-[#00C8C8] md:left-12"
-          >
-            Scroll to explore
-            <ArrowDown size={15} />
-          </a>
-        </section>
-
-        {/* SELECTED WORK */}
         <section
           id="work"
           className="scroll-mt-24 px-6 py-28 md:px-12"
@@ -729,8 +652,7 @@ export default function HomePage() {
 
                       <div className="mt-6">
                         <p className="mb-2 text-xs uppercase tracking-widest text-[#00C8C8]">
-                          Featured Project /
-                          {" "}
+                          Featured Project /{" "}
                           {String(
                             index + 1
                           ).padStart(2, "0")}
@@ -783,7 +705,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ABOUT */}
+        {/* ==================================================
+            ABOUT
+        ================================================== */}
+
         <section
           id="about"
           className="scroll-mt-20 border-y border-white/10 bg-[#11121D] px-6 py-28 md:px-12"
@@ -797,8 +722,10 @@ export default function HomePage() {
               <h2 className="mt-8 max-w-3xl text-5xl font-bold leading-[1.08] tracking-[-0.06em] md:text-7xl">
                 BUILD.
                 <br />
+
                 DESIGN.
                 <br />
+
                 <span className="text-[#00C8C8]">
                   CREATE.
                 </span>
@@ -823,6 +750,7 @@ export default function HomePage() {
                     className="inline-flex items-center gap-2 rounded-full bg-[#00C8C8] px-6 py-3 text-sm font-semibold text-[#0B0B12]"
                   >
                     View My CV
+
                     <ArrowUpRight
                       size={17}
                     />
@@ -834,6 +762,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-medium transition hover:border-[#00C8C8]"
                 >
                   Get in Touch
+
                   <ArrowRight size={17} />
                 </a>
               </div>
@@ -880,7 +809,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* EXPERTISE */}
+        {/* ==================================================
+            EXPERTISE
+        ================================================== */}
+
         <section
           id="expertise"
           className="scroll-mt-24 px-6 py-28 md:px-12"
@@ -893,6 +825,7 @@ export default function HomePage() {
 
               <h2 className="mt-5 text-5xl font-bold tracking-[-0.06em] md:text-8xl">
                 Expertise
+
                 <span className="text-[#8055F8]">
                   .
                 </span>
@@ -955,7 +888,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CREATIVE LAB */}
+        {/* ==================================================
+            CREATIVE LAB
+        ================================================== */}
+
         <section
           id="creative"
           className="scroll-mt-24 border-y border-white/10 bg-[#11121D] px-6 py-28 md:px-12"
@@ -969,6 +905,7 @@ export default function HomePage() {
 
                 <h2 className="mt-5 text-5xl font-bold tracking-[-0.06em] md:text-8xl">
                   Creative{" "}
+
                   <span className="text-[#A78BFA]">
                     Lab.
                   </span>
@@ -1066,7 +1003,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CONTACT */}
+        {/* ==================================================
+            CONTACT
+        ================================================== */}
+
         <section
           id="contact"
           className="scroll-mt-24 px-6 py-28 md:px-12"
@@ -1079,9 +1019,11 @@ export default function HomePage() {
 
               <h2 className="mt-7 text-6xl font-bold leading-[1] tracking-[-0.07em] md:text-8xl">
                 LET&apos;S
+
                 <span className="block text-[#00C8C8]">
                   CREATE
                 </span>
+
                 TOGETHER.
               </h2>
 
@@ -1142,6 +1084,7 @@ export default function HomePage() {
                   className="mt-8 inline-flex items-center gap-2 text-sm text-[#00C8C8] hover:underline"
                 >
                   <Mail size={17} />
+
                   {
                     settings.contact_email
                   }
@@ -1256,7 +1199,8 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Spam honeypot */}
+              {/* SPAM HONEYPOT */}
+
               <div
                 className="absolute -left-[9999px]"
                 aria-hidden="true"
@@ -1294,6 +1238,7 @@ export default function HomePage() {
                   className="flex items-center gap-2 text-sm text-emerald-400"
                 >
                   <Check size={17} />
+
                   {contactSuccess}
                 </p>
               )}
@@ -1321,7 +1266,10 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* FOOTER */}
+      {/* ======================================================
+          FOOTER
+      ====================================================== */}
+
       <footer className="border-t border-white/10 px-6 py-8 md:px-12">
         <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-5 text-center sm:flex-row sm:text-left">
           <div className="flex items-center gap-3">
@@ -1348,6 +1296,7 @@ export default function HomePage() {
             className="flex items-center gap-2 text-xs text-white/60 hover:text-[#00C8C8]"
           >
             Back to Top
+
             <ArrowUpRight size={16} />
           </a>
         </div>
